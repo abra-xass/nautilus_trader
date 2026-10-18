@@ -21,12 +21,11 @@ run_step() {
     shift
 
     printf '\n===== %s =====\n' "$label"
-    "$@"
-    local status=$?
 
-    if [ "$status" -eq 0 ]; then
+    if "$@"; then
         printf 'PASS: %s\n' "$label"
     else
+        local status=$?
         printf 'FAIL (%s): %s\n' "$status" "$label"
         failures=$((failures + 1))
     fi
@@ -43,7 +42,7 @@ run_step 'NautilusTrader Python tests' make -C "$repo_root" pytest
 ui_root="$repo_root/sirius-ui"
 if [ -d "$ui_root/backend/tests" ]; then
     run_step 'Sirius UI backend tests' \
-        bash -c 'cd "$1/backend" && python -m pytest tests' _ "$ui_root"
+        bash -c 'cd "$1" && python -m pytest tests' _ "$ui_root/backend"
 else
     printf '\nSKIP: Sirius UI backend tests (sirius-ui/backend/tests not found)\n'
 fi
