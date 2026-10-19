@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Runs NautilusTrader and, when present, Sirius UI checks with a saved log.
+# Runs focused Sirius checks by default and saves a log.
 
 set -uo pipefail
 
@@ -36,8 +36,16 @@ printf 'Branch: %s\n' "$(git -C "$repo_root" branch --show-current)"
 printf 'Commit: %s\n' "$(git -C "$repo_root" rev-parse --short HEAD)"
 printf 'Log file: %s\n' "$log_file"
 
-run_step 'NautilusTrader Rust tests' make -C "$repo_root" cargo-test
-run_step 'NautilusTrader Python tests' make -C "$repo_root" pytest
+if [ "${SIRIUS_FULL_TESTS:-0}" = "1" ]; then
+    run_step 'NautilusTrader full Rust workspace tests' \
+        make -C "$repo_root" cargo-test
+    run_step 'NautilusTrader full Python tests' \
+        make -C "$repo_root" pytest
+else
+    run_step 'Sirius core risk tests' \
+        env CARGO_INCREMENTAL=0 cargo nextest run --locked \
+        -p nautilus-risk --lib --tests --features python --cargo-profile nextest
+fi
 
 ui_root="$repo_root/sirius-ui"
 if [ -d "$ui_root/backend/tests" ]; then
